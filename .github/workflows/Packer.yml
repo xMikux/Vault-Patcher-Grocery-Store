@@ -1,6 +1,7 @@
 name: Packer
 
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - main
@@ -14,10 +15,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Zip files
+      - name: Init Resourcepack
         run: |
-          zip -r Test.zip ModConfigs
+          mkdir -p pack/assets
+          cp -r ModConfigs/*/* pack/assets/
+
+      - name: Pack Up!
+        uses: ComunidadAylas/PackSquash-action@v4
+        with:
+          packsquash_version: latest
+          options: |
+            pack_directory = 'pack'
 
       - name: Setup custom info
         id: info
@@ -28,23 +39,28 @@ jobs:
           echo "version=$current_date-$sha_short" >> "$GITHUB_OUTPUT"
           echo "commit=$git_commit" >> "$GITHUB_OUTPUT"
 
-      - name: Release publish
-        uses: Kir-Antipov/mc-publish@v3.3
-        with:
-          modrinth-id: 
-          modrinth-unfeature-mode: subset
-          name: VPGS中文硬编码汉化数据包
-          version: ${{ steps.info.outputs.version }}
-          version-type: release
-          changelog: |
-            ${{ steps.info.outputs.commit }}
+      - name: Testing Info
+        run: |
+          echo "Version = ${{ steps.info.outputs.version }}"
+          echo "Changelog = ${{ steps.info.outputs.commit }}"
 
-            ------
-            由 [GitHub Action][github-action] 上傳
+      # - name: Release publish
+      #   uses: Kir-Antipov/mc-publish@v3.3
+      #   with:
+      #     modrinth-id: 
+      #     modrinth-unfeature-mode: subset
+      #     name: VPGS中文硬编码汉化数据包
+      #     version: ${{ steps.info.outputs.version }}
+      #     version-type: release
+      #     changelog: |
+      #       ${{ steps.info.outputs.commit }}
 
-            [github-action]: https://github.com/features/actions
-          loaders: minecraft
-          game-versions: ">1.13"
-          files: |
-            Test.zip
-          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+      #       ------
+      #       由 [GitHub Action][github-action] 上傳
+
+      #       [github-action]: https://github.com/features/actions
+      #     loaders: minecraft
+      #     game-versions: ">1.13"
+      #     files: |
+      #       Test.zip
+      #     modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
